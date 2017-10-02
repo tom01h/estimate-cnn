@@ -113,7 +113,8 @@ void BinNorm(int ci, int yi, int xi, int in[yi][xi][ci],
     for(int y=0; y<yi; y++){
       for(int x=0; x<xi; x++){
         //        out[c][y][x] = (in[c][y][x]-mean[c])/(sqrt(var[c]));
-        out[y][x][c] = (in[y][x][c]*8-mean[c]);
+        if((in[y][x][c]>512)||(in[y][x][c]<-512)){printf("Overflow\n");}
+        out[y][x][c] = (in[y][x][c]*64-mean[c]);
       }
     }
   }
