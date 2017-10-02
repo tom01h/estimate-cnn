@@ -1,0 +1,12 @@
+# BNN と TNN の推論実行環境構築中
+- データは[ここ](https://www.cs.toronto.edu/~kriz/cifar.html)から CIFAR-10 binary version (suitable for C programs) の test_batch.bin をダウンロードして cifar10-test にリネーム
+- BNN
+  - 最初の100データだと 74% の認識精度
+  - ./BNN/params.h.gz を解いて ./params.h にする（デフォルト）
+  - Activ 関数を呼んでいるところをすべて BinActiv にする （デフォルト）
+- TNN
+  - 最初の100データだと 78% の認識精度
+  - ./TNN/params.h.gz を解いて ./params.h にする
+  - Activ 関数を呼んでいるところをすべて TriActiv にする
+- 特にバイナライズのメリットを生かしたコードになっていないので遅い
+- バッチ処理もしていないのでとっても遅い
