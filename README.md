@@ -2,11 +2,14 @@
 - データは[ここ](https://www.cs.toronto.edu/~kriz/cifar.html)から CIFAR-10 binary version (suitable for C programs) の test_batch.bin をダウンロードして cifar10-test にリネーム
 - BNN
   - 最初の100データだと 74% の認識精度
-  - ./BNN/params.h.gz を解いて ./params.h にする（デフォルト）
+  - 2,3,4層のデータ型を整数化
+  - ./BNN/params.h.gz を解いて、変換して paramb.h を作る
+    - mean2,3,4 を x.6 精度の FIXED INT に変換
+    - データの並び順を C,Y,X から Y,X,C に変換
+  - Norm の直後に BinActiv(符号) なので var は不要
   - Activ 関数を呼んでいるところをすべて BinActiv にする （デフォルト）
-- TNN
+- TNN (整数化保留)
   - 最初の100データだと 78% の認識精度
   - ./TNN/params.h.gz を解いて ./params.h にする
   - Activ 関数を呼んでいるところをすべて TriActiv にする
-- 特にバイナライズのメリットを生かしたコードになっていないので遅い
-- バッチ処理もしていないのでとっても遅い
+- バッチ処理していないのでとっても遅い
