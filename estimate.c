@@ -240,7 +240,8 @@ int main(int argc,char *argv[])
       for(int y=0; y<18; y++){
         for(int x=0; x<18; x++){
           if((x==0)|(x==17)|(y==0)|(y==17)){
-            layer2in[y][x][c] = 0;//padding=1
+            layer2in[y][x][c] = 1;//padding=1 //BNN
+            //layer2in[y][x][c] = 0;//padding=1 //other
           }else{
             layer2in[y][x][c] = activ1out[y-1][x-1][c];
           }
@@ -255,7 +256,8 @@ int main(int argc,char *argv[])
       for(int y=0; y<10; y++){
         for(int x=0; x<10; x++){
           if((x==0)|(x==9)|(y==0)|(y==9)){
-            layer3in[y][x][c] = 0;//padding=1
+            layer3in[y][x][c] = 1;//padding=1 //BNN
+            //layer3in[y][x][c] = 0;//padding=1 //other
           }else{
             layer3in[y][x][c] = activ2out[y-1][x-1][c];
           }
@@ -294,4 +296,24 @@ int main(int argc,char *argv[])
     }
   }
   printf ("== Pass Count : %04d ==\n",pass);
+
+  /*
+  //int conv2out[16][16][32];
+  //int pool2out[8][8][32];
+  //int norm2out[8][8][32];
+  //int activ2out[8][8][32];
+  uint out;
+  for(int y=0; y<8; y++){
+    for(int x=0; x<8; x++){
+      out = 0;
+      for(int c=0; c<32; c++){
+        if(activ2out[y][x][c]==-1){
+          out |= 1<<c;
+        }
+      }
+      printf("%08x, ",out);
+    }
+    printf("\n");
+  }
+  */
 }
