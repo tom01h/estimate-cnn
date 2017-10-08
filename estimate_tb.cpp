@@ -95,10 +95,10 @@ int main(int argc, char **argv, char **env) {
   
   int w2b=0*32;
   int w3b=9*32;
-  int w4b=1*32;
-  int m2b=530*32;
-  int m3b=531*32;
-  int m4b=532*32;
+  int w4b=27*32;
+  int m2b=539*32;
+  int m3b=540*32;
+  int m4b=542*32;
 
   FILE *fp;
   if((fp = fopen("cifar10-test", "rb")) == NULL ) {
@@ -120,6 +120,9 @@ int main(int argc, char **argv, char **env) {
 
   int activ3out[4][4][64];
   uint activ3bin[4][4][2];
+
+  int activ4out[512];
+  uint activ4bin[16];
 
   int i, nloop;
   char vcdfile[VCD_PATH_LENGTH];
@@ -172,6 +175,7 @@ int main(int argc, char **argv, char **env) {
         for(int c=0; c<32; c=c+1){
 
           verilator_top->com=0;//ini
+          verilator_top->data=-288;
           main_time = eval(main_time, verilator_top, tfp);
 
           for(int p=0; p<4; p++){
@@ -192,6 +196,7 @@ int main(int argc, char **argv, char **env) {
             }
 
             verilator_top->com=2;//pool
+            verilator_top->data=-288;
             main_time = eval(main_time, verilator_top, tfp);
           }//pool
 
@@ -219,6 +224,7 @@ int main(int argc, char **argv, char **env) {
         for(int c=0; c<64; c=c+1){
 
           verilator_top->com=0;//ini
+          verilator_top->data=-288;
           main_time = eval(main_time, verilator_top, tfp);
 
           for(int p=0; p<4; p++){
@@ -239,6 +245,7 @@ int main(int argc, char **argv, char **env) {
             }
 
             verilator_top->com=2;//pool
+            verilator_top->data=-288;
             main_time = eval(main_time, verilator_top, tfp);
           }//pool
 
@@ -263,10 +270,51 @@ int main(int argc, char **argv, char **env) {
       }
     }
     // 4th layer
+    for(int c=0; c<512; c=c+1){
+      verilator_top->com=0;//ini
+      verilator_top->data=-1024;
+      main_time = eval(main_time, verilator_top, tfp);
+      for(int y=0; y<4; y=y+1){
+        for(int x=0; x<4; x=x+1){
+          for(int i=0; i<2; i=i+1){
+            verilator_top->com=1;//acc
+            verilator_top->addr=w4b+c*4*4*2+y*4*2+x*2+i;
+            verilator_top->data=activ3bin[y][x][i];
+            main_time = eval(main_time, verilator_top, tfp);
+          }
+        }
+      }
+      verilator_top->com=2;//pool
+      verilator_top->data=-1024;
+      main_time = eval(main_time, verilator_top, tfp);
+      verilator_top->com=3;//norm
+      verilator_top->addr=m4b+c;
+      main_time = eval(main_time, verilator_top, tfp);
+
+      verilator_top->com=4;//activ
+      main_time = eval(main_time, verilator_top, tfp);
+      activ4out[c]=verilator_top->activ;
+    }// 4th layer
+    for(int c=0; c<512/32; c++){
+      activ4bin[c]=0;
+      for(int i=0; i<32; i=i+1){
+        activ4bin[c]|=activ4out[c*32+i]<<i;
+      }
+    }
+
 
   }
   delete verilator_top;
   tfp->close();
+
+  for(int y=0; y<8; y++){
+    for(int x=0; x<8; x++){
+      printf("%08x, ",activ2bin[y][x]);
+    }
+    printf("\n");
+  }
+
+  printf("\n");
 
   for(int y=0; y<4; y++){
     for(int x=0; x<4; x++){
@@ -274,6 +322,14 @@ int main(int argc, char **argv, char **env) {
     }
     printf("\n");
   }
-  
+
+  printf("\n");
+
+  for(int i=0; i<16; i=i+1){
+    printf("%08x, ",activ4bin[i]);
+    if(i==7){printf("\n");}
+  }
+  printf("\n");
+
   exit(0);
 }

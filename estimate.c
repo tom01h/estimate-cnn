@@ -218,7 +218,7 @@ int main(int argc,char *argv[])
   float affine5out[10];
 
   int pass = 0;
-  for (int i=0;i<100;i++){
+  for (int i=0;i<1;i++){
     label[i] = fgetc(fp);
     for(int c=0; c<3; c++){
       for(int y=0; y<32+2; y++){
@@ -297,12 +297,30 @@ int main(int argc,char *argv[])
   }
   printf ("== Pass Count : %04d ==\n",pass);
 
-  /*
   //int conv2out[16][16][32];
   //int pool2out[8][8][32];
   //int norm2out[8][8][32];
   //int activ2out[8][8][32];
   //int activ3out[4][4][64];
+  //int activ4out[1][1][512];
+
+  uint out;
+
+  for(int y=0; y<8; y++){
+    for(int x=0; x<8; x++){
+      out = 0;
+      for(int c=0; c<32; c++){
+        if(activ2out[y][x][c]==-1){
+          out |= 1<<c;
+        }
+      }
+      printf("%08x, ",out);
+    }
+    printf("\n");
+  }
+
+  printf("\n");
+
   uint out0, out1;
   for(int y=0; y<4; y++){
     for(int x=0; x<4; x++){
@@ -320,5 +338,18 @@ int main(int argc,char *argv[])
     }
     printf("\n");
   }
-  */
+
+  printf("\n");
+
+  for(int i=0; i<16; i=i+1){
+    out = 0;
+    for(int c=0; c<32; c++){
+      if(activ4out[0][0][i*32+c]==-1){
+        out |= 1<<c;
+      }
+    }
+    printf("%08x, ",out);
+    if(i==7){printf("\n");}
+  }
+  printf("\n");
 }
