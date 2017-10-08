@@ -31,9 +31,10 @@ $ ./sim/Vestimate
 ```
 - BNN
   - 第1層はVerilog化しない
-  - いまは第2層だけVerilog化済み
-  - パイプライン化はまだ
-
+  - 第2,3,4層をVerilog化済み
+  - 出力層以降はVerilog化しない
+  - パイプライン化していない・パラメタメモリも非同期アクセス
+- 真面目にバイナリ化したので C 環境よりも速いみたい
 ---
 
 ##### 推論アクセラレータ
@@ -47,15 +48,15 @@ $ ./sim/Vestimate
 - POOL
 
 ##### コマンド
-- Init()
-  - 2: ACC ← 0
-  - 2: POOL ← -Max
+- Init(bias)
+  - 2: ACC ← bias (accの要素数)
+  - 2: POOL ← -MAX
 - Acc(addr, x)
   - 1: WEIGHT ← Mem(addr)
   - 2: ACC ← ACC + Popc(Xnor(WEIGHT, x))
-- Pool()
+- Pool(bias)
   - 2: POOL ← Max(ACC, POOL)
-  - 2: ACC ← 0
+  - 2: ACC ← bias
 - Norm(addr)
   - 1: MEAN ← Mem(addr)
   - 2: POOL ← POOL - MEAN

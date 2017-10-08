@@ -218,7 +218,7 @@ int main(int argc,char *argv[])
   float affine5out[10];
 
   int pass = 0;
-  for (int i=0;i<1;i++){
+  for (int i=0;i<100;i++){
     label[i] = fgetc(fp);
     for(int c=0; c<3; c++){
       for(int y=0; y<32+2; y++){

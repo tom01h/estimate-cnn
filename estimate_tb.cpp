@@ -17,11 +17,11 @@ vluint64_t eval(vluint64_t main_time, Vestimate* verilator_top, VerilatedVcdC* t
 {
   verilator_top->clk = 0;
   verilator_top->eval();
-  tfp->dump(main_time);
+  //  tfp->dump(main_time);
 
   verilator_top->clk = 1;
   verilator_top->eval();
-  tfp->dump(main_time+50);
+  //  tfp->dump(main_time+50);
 
   return main_time + 100;
 }
@@ -91,6 +91,20 @@ void BinActivF(int ci, int yi, int xi,float in[16][16][32],
   }
 }
 
+void Affine(int xi,int ci, uint in[16], float f[10][512], float out[10])
+{
+  for(int c=0; c<ci; c++){
+    out[c] = 0;
+    for(int x=0; x<xi; x++){
+      if(in[x/32]&(1<<(x%32))){//-1
+        out[c] -= f[c][x];
+      }else{
+        out[c] += f[c][x];
+      }
+    }
+  }
+}
+
 int main(int argc, char **argv, char **env) {
   
   int w2b=0*32;
@@ -124,6 +138,10 @@ int main(int argc, char **argv, char **env) {
   int activ4out[512];
   uint activ4bin[16];
 
+  float affine5out[10];
+
+  int pass = 0;
+
   int i, nloop;
   char vcdfile[VCD_PATH_LENGTH];
 
@@ -139,7 +157,7 @@ int main(int argc, char **argv, char **env) {
   tfp->open(vcdfile);
   vluint64_t main_time = 0;
   //  while (!Verilated::gotFinish()) {
-  nloop = 1;
+  nloop = 100;
   for (int i=0;i<nloop;i++){
     // load image
     label[i] = fgetc(fp);
@@ -302,10 +320,26 @@ int main(int argc, char **argv, char **env) {
       }
     }
 
+    Affine(512,10,activ4bin,W5,affine5out);
 
+    int result = 0;
+    float max = affine5out[0];
+    for(int x=0; x<10; x++){
+      if(affine5out[x]>max){
+        max = affine5out[x];
+        result = x;
+      }
+    }
+    if(result==label[i]){
+      pass++;
+    }else{
+      printf ("No. %02d / Right : %02d != Result : %02d\n",i,label[i],result);
+    }
   }
   delete verilator_top;
   tfp->close();
+
+  printf ("== Pass Count : %04d ==\n",pass);
 
   for(int y=0; y<8; y++){
     for(int x=0; x<8; x++){
