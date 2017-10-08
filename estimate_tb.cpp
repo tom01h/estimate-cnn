@@ -118,6 +118,9 @@ int main(int argc, char **argv, char **env) {
   int activ2out[8][8][32];
   uint activ2bin[8][8];
 
+  int activ3out[4][4][64];
+  uint activ3bin[4][4][2];
+
   int i, nloop;
   char vcdfile[VCD_PATH_LENGTH];
 
@@ -135,7 +138,7 @@ int main(int argc, char **argv, char **env) {
   //  while (!Verilated::gotFinish()) {
   nloop = 1;
   for (int i=0;i<nloop;i++){
-    // ‰æ‘œ“ü—Í
+    // load image
     label[i] = fgetc(fp);
     for(int c=0; c<3; c++){
       for(int y=0; y<32+2; y++){
@@ -148,6 +151,7 @@ int main(int argc, char **argv, char **env) {
         }
       }
     }    
+    // 1st layer
     Conv(3,32,32,pict[i],32,3,3,W1,conv1out);
     Pool(32,32,32,conv1out,2,2,pool1out);
     Norm(32,16,16,pool1out,mean1,var1,norm1out);
@@ -162,8 +166,8 @@ int main(int argc, char **argv, char **env) {
         }
       }
     }
-
-    for(int y=0; y<8; y=y+1){//layer2
+    // 2nd layer
+    for(int y=0; y<8; y=y+1){
       for(int x=0; x<8; x=x+1){
         for(int c=0; c<32; c=c+1){
 
@@ -176,9 +180,7 @@ int main(int argc, char **argv, char **env) {
             for(int fy=0; fy<3; fy=fy+1){
               for(int fx=0; fx<3; fx=fx+1){
                 verilator_top->com=1;//acc
-                verilator_top->addr=w2b*32+c*9+fy*3+fx;
-                verilator_top->x=px+fx;//temp
-                verilator_top->y=py+fy;//temp
+                verilator_top->addr=w2b+c*9+fy*3+fx;
                 if(((py+fy)==0)|((py+fy)==17)|((px+fx)==0)|((px+fx)==17)){
                   verilator_top->data=0;
                 }else{
@@ -202,7 +204,7 @@ int main(int argc, char **argv, char **env) {
           activ2out[y][x][c]=verilator_top->activ;
         }
       }
-    }//layer2
+    }// 2nd layer
     for(int y=0; y<8; y++){
       for(int x=0; x<8; x++){
         activ2bin[y][x]=0;
@@ -211,14 +213,64 @@ int main(int argc, char **argv, char **env) {
         }
       }
     }
+    // 3rd layer
+    for(int y=0; y<4; y=y+1){
+      for(int x=0; x<4; x=x+1){
+        for(int c=0; c<64; c=c+1){
+
+          verilator_top->com=0;//ini
+          main_time = eval(main_time, verilator_top, tfp);
+
+          for(int p=0; p<4; p++){
+            int py=p/2+y*2;
+            int px=p%2+x*2;
+            for(int fy=0; fy<3; fy=fy+1){
+              for(int fx=0; fx<3; fx=fx+1){
+                verilator_top->com=1;//acc
+                verilator_top->addr=w3b+c*9+fy*3+fx;
+                if(((py+fy)==0)|((py+fy)==9)|((px+fx)==0)|((px+fx)==9)){
+                  verilator_top->data=0;
+                }else{
+                  verilator_top->data=activ2bin[py+fy-1][px+fx-1];
+                }
+
+                main_time = eval(main_time, verilator_top, tfp);
+              }
+            }
+
+            verilator_top->com=2;//pool
+            main_time = eval(main_time, verilator_top, tfp);
+          }//pool
+
+          verilator_top->com=3;//norm
+          verilator_top->addr=m3b+c;
+          main_time = eval(main_time, verilator_top, tfp);
+
+          verilator_top->com=4;//activ
+          main_time = eval(main_time, verilator_top, tfp);
+          activ3out[y][x][c]=verilator_top->activ;
+        }
+      }
+    }// 3rd layer
+    for(int y=0; y<4; y++){
+      for(int x=0; x<4; x++){
+        activ3bin[y][x][0]=0;
+        activ3bin[y][x][1]=0;
+        for(int c=0; c<32; c=c+1){
+          activ3bin[y][x][0]|=activ3out[y][x][c]   <<c;
+          activ3bin[y][x][1]|=activ3out[y][x][c+32]<<c;
+        }
+      }
+    }
+    // 4th layer
 
   }
   delete verilator_top;
   tfp->close();
 
-  for(int y=0; y<8; y++){
-    for(int x=0; x<8; x++){
-      printf("%08x, ",activ2bin[y][x]);
+  for(int y=0; y<4; y++){
+    for(int x=0; x<4; x++){
+      printf("%08x, %08x, ",activ3bin[y][x][0],activ3bin[y][x][1]);
     }
     printf("\n");
   }

@@ -4,9 +4,7 @@ module estimate
    input wire [2:0]  com,
    input wire [15:0] addr,
    input wire [31:0] data,
-   output wire       activ,
-   input wire [15:0] x,//TEMP//TEMP//
-   input wire [15:0] y //TEMP//TEMP//
+   output wire       activ
    );
    
 `include "param.v"
@@ -37,7 +35,10 @@ module estimate
            pool[15:0] = 16'h8000;
         end
         3'd1 : begin //acc
-           param[31:0] = W2[(addr-w2b)/9][(addr-w2b)%9];
+           if(addr<w3b)
+             param[31:0] = W2[(addr-w2b)/9][(addr-w2b)%9];
+           else
+             param[31:0] = W3[(addr-w3b)/9][(addr-w3b)%9];
            for(i=0; i<32;i=i+1)begin
               acc = acc + {1'b0,~(data[i]^param[i]),1'b0};
            end
@@ -49,7 +50,10 @@ module estimate
            acc[15:0] = -288;
         end
         3'd3 : begin //norm
-           param[31:0] = mean2[addr-m2b];
+           if(addr<m3b)
+             param[31:0] = mean2[addr-m2b];
+           else
+             param[31:0] = mean3[addr-m3b];
            pool[15:0] = {pool[15:0],6'h00} - param[15:0];
         end
         3'd4 : begin //activ

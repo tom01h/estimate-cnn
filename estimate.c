@@ -302,16 +302,21 @@ int main(int argc,char *argv[])
   //int pool2out[8][8][32];
   //int norm2out[8][8][32];
   //int activ2out[8][8][32];
-  uint out;
-  for(int y=0; y<8; y++){
-    for(int x=0; x<8; x++){
-      out = 0;
+  //int activ3out[4][4][64];
+  uint out0, out1;
+  for(int y=0; y<4; y++){
+    for(int x=0; x<4; x++){
+      out0 = 0;
+      out1 = 0;
       for(int c=0; c<32; c++){
-        if(activ2out[y][x][c]==-1){
-          out |= 1<<c;
+        if(activ3out[y][x][c]==-1){
+          out0 |= 1<<c;
+        }
+        if(activ3out[y][x][c+32]==-1){
+          out1 |= 1<<c;
         }
       }
-      printf("%08x, ",out);
+      printf("%08x, %08x, ",out0,out1);
     }
     printf("\n");
   }
