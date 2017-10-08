@@ -17,11 +17,11 @@ vluint64_t eval(vluint64_t main_time, Vestimate* verilator_top, VerilatedVcdC* t
 {
   verilator_top->clk = 0;
   verilator_top->eval();
-  //  tfp->dump(main_time);
+  //tfp->dump(main_time);
 
   verilator_top->clk = 1;
   verilator_top->eval();
-  //  tfp->dump(main_time+50);
+  //tfp->dump(main_time+50);
 
   return main_time + 100;
 }
@@ -224,6 +224,8 @@ int main(int argc, char **argv, char **env) {
 
           verilator_top->com=4;//activ
           main_time = eval(main_time, verilator_top, tfp);
+          main_time = eval(main_time, verilator_top, tfp);
+          main_time = eval(main_time, verilator_top, tfp);
           activ2out[y][x][c]=verilator_top->activ;
         }
       }
@@ -273,6 +275,8 @@ int main(int argc, char **argv, char **env) {
 
           verilator_top->com=4;//activ
           main_time = eval(main_time, verilator_top, tfp);
+          main_time = eval(main_time, verilator_top, tfp);
+          main_time = eval(main_time, verilator_top, tfp);
           activ3out[y][x][c]=verilator_top->activ;
         }
       }
@@ -310,6 +314,8 @@ int main(int argc, char **argv, char **env) {
       main_time = eval(main_time, verilator_top, tfp);
 
       verilator_top->com=4;//activ
+      main_time = eval(main_time, verilator_top, tfp);
+      main_time = eval(main_time, verilator_top, tfp);
       main_time = eval(main_time, verilator_top, tfp);
       activ4out[c]=verilator_top->activ;
     }// 4th layer
