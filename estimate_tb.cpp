@@ -107,12 +107,12 @@ void Affine(int xi,int ci, uint in[16], float f[10][512], float out[10])
 
 int main(int argc, char **argv, char **env) {
   
-  int w2b=0*32;
-  int w3b=9*32;
-  int w4b=27*32;
-  int m2b=539*32;
-  int m3b=540*32;
-  int m4b=542*32;
+  int w2b=0;
+  int w3b=9;
+  int w4b=27;
+  int m2b=539;
+  int m3b=540;
+  int m4b=542;
 
   FILE *fp;
   if((fp = fopen("cifar10-test", "rb")) == NULL ) {
@@ -129,13 +129,10 @@ int main(int argc, char **argv, char **env) {
 
   uint activ1bin[16][16];
 
-  int activ2out[8][8][32];
   uint activ2bin[8][8];
 
-  int activ3out[4][4][64];
   uint activ3bin[4][4][2];
 
-  int activ4out[512];
   uint activ4bin[16];
 
   float affine5out[10];
@@ -190,7 +187,7 @@ int main(int argc, char **argv, char **env) {
     // 2nd layer
     for(int y=0; y<8; y=y+1){
       for(int x=0; x<8; x=x+1){
-        for(int c=0; c<32; c=c+1){
+        for(int c=0; c<32/32; c=c+1){
 
           verilator_top->com=0;//ini
           verilator_top->data=-288;
@@ -226,22 +223,14 @@ int main(int argc, char **argv, char **env) {
           main_time = eval(main_time, verilator_top, tfp);
           main_time = eval(main_time, verilator_top, tfp);
           main_time = eval(main_time, verilator_top, tfp);
-          activ2out[y][x][c]=verilator_top->activ;
+          activ2bin[y][x]=verilator_top->activ;
         }
       }
     }// 2nd layer
-    for(int y=0; y<8; y++){
-      for(int x=0; x<8; x++){
-        activ2bin[y][x]=0;
-        for(int c=0; c<32; c=c+1){
-          activ2bin[y][x]|=activ2out[y][x][c]<<c;
-        }
-      }
-    }
     // 3rd layer
     for(int y=0; y<4; y=y+1){
       for(int x=0; x<4; x=x+1){
-        for(int c=0; c<64; c=c+1){
+        for(int c=0; c<64/32; c=c+1){
 
           verilator_top->com=0;//ini
           verilator_top->data=-288;
@@ -277,22 +266,12 @@ int main(int argc, char **argv, char **env) {
           main_time = eval(main_time, verilator_top, tfp);
           main_time = eval(main_time, verilator_top, tfp);
           main_time = eval(main_time, verilator_top, tfp);
-          activ3out[y][x][c]=verilator_top->activ;
+          activ3bin[y][x][c]=verilator_top->activ;
         }
       }
     }// 3rd layer
-    for(int y=0; y<4; y++){
-      for(int x=0; x<4; x++){
-        activ3bin[y][x][0]=0;
-        activ3bin[y][x][1]=0;
-        for(int c=0; c<32; c=c+1){
-          activ3bin[y][x][0]|=activ3out[y][x][c]   <<c;
-          activ3bin[y][x][1]|=activ3out[y][x][c+32]<<c;
-        }
-      }
-    }
     // 4th layer
-    for(int c=0; c<512; c=c+1){
+    for(int c=0; c<512/32; c=c+1){
       verilator_top->com=0;//ini
       verilator_top->data=-1024;
       main_time = eval(main_time, verilator_top, tfp);
@@ -317,14 +296,8 @@ int main(int argc, char **argv, char **env) {
       main_time = eval(main_time, verilator_top, tfp);
       main_time = eval(main_time, verilator_top, tfp);
       main_time = eval(main_time, verilator_top, tfp);
-      activ4out[c]=verilator_top->activ;
+      activ4bin[c]=verilator_top->activ;
     }// 4th layer
-    for(int c=0; c<512/32; c++){
-      activ4bin[c]=0;
-      for(int i=0; i<32; i=i+1){
-        activ4bin[c]|=activ4out[c*32+i]<<i;
-      }
-    }
 
     Affine(512,10,activ4bin,W5,affine5out);
 

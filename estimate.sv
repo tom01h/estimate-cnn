@@ -1,30 +1,54 @@
 module estimate
   (
-   input wire        clk,
-   input wire [2:0]  com,
-   input wire [15:0] addr,
-   input wire [31:0] data,
-   output wire       activ
+   input wire         clk,
+   input wire [2:0]   com,
+   input wire [15:0]  addr,
+   input wire [31:0]  data,
+   output wire [31:0] activ
    );
    
-   reg [31:0]         param;
-   reg signed [15:0]  acc;
-   reg signed [15:0]  pool;
+   reg [1023:0]         param;
          
-   integer            i;
-
    ram0 ram0 (clk, addr, param);
 
-   reg [2:0]          com_1;
-   reg [31:0]         data_1;
+   reg [2:0]            com_1;
+   reg [31:0]           data_1;
 // input stage
    always_ff @(posedge clk)begin
       com_1[2:0] <= com;
       data_1[31:0] <= data;
    end
 
-   reg [2:0]          com_2;
-   reg [31:0]         data_2;
+   genvar               g;
+   generate begin
+      for(g=0;g<32;g=g+1) begin : estimate_block
+         estimate_core core
+            (.clk(clk), .com_1(com_1[2:0]), .data_1(data_1[31:0]),
+             .param(param[32*(31-g)+31:32*(31-g)+0]),
+             .activ(activ[g])
+             );
+      end : estimate_block
+   end
+   endgenerate
+
+endmodule
+
+module estimate_core
+  (
+   input wire        clk,
+   input wire [2:0]  com_1,
+   input wire [31:0] data_1,
+   input wire [31:0] param,
+   output reg        activ
+   );
+
+   integer           i;
+
+   reg signed [15:0] acc;
+   reg signed [15:0] pool;
+
+   reg [2:0]         com_2;
+   reg [31:0]        data_2;
 // 1st stage
    always_ff @(posedge clk)begin
       com_2[2:0] <= com_1;
@@ -79,9 +103,9 @@ endmodule
 module ram0 (clk, addr, dout);
    input clk;
    input [15:0] addr;
-   output [31:0] dout;
+   output [1023:0] dout;
 `include "param0"
-   reg [31:0]    dout;
+   reg [1024:0]    dout;
 
    always @(posedge clk)
      begin
