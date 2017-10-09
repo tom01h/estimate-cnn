@@ -2,8 +2,10 @@
 学習済みパラメータを使ったバイナリニューラルネットアクセラレータ作成中です
 ### 準備
 - データは[ここ](https://www.cs.toronto.edu/~kriz/cifar.html)から CIFAR-10 binary version (suitable for C programs) の test_batch.bin をダウンロードして cifar10-test にリネーム
-- [ここ](https://github.com/tom01h/deep-learning-from-scratch) で作った学習済みパラメータを使う  
-```$ ../mkparams.pl W1.h mean1.h var1.h W2.h mean2.h var2.h W3.h mean3.h var3.h W4.h mean4.h var4.h W5.h > ../paramn.h
+- [ここ](https://github.com/tom01h/deep-learning-from-scratch) で作った学習済みパラメータを使う
+
+```
+$ ../mkparams.pl W1.h mean1.h var1.h W2.h mean2.h var2.h W3.h mean3.h var3.h W4.h mean4.h var4.h W5.h > ../paramn.h
 ```
 
 ### C 環境
