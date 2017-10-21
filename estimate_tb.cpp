@@ -37,7 +37,7 @@ void Conv(int ci, int yi, int xi, unsigned char in[32+2][32+2][3],
         for(int fc=0; fc<ci; fc++){
           for(int fy=0; fy<fyi; fy++){
             for(int fx=0; fx<fxi; fx++){
-              out[y][x][c] += f[c][fy*fxi*ci+fx*ci+fc]*(in[fy+y][fx+x][fc]/255.0f);
+              out[y][x][c] += f[c][fy*fxi*ci+fx*ci+fc]*(in[fy+y][fx+x][fc]*2-255);
             }
           }
         }    
@@ -154,7 +154,7 @@ int main(int argc, char **argv, char **env) {
   tfp->open(vcdfile);
   vluint64_t main_time = 0;
   //  while (!Verilated::gotFinish()) {
-  nloop = 100;
+  nloop = 1000;
   for (int i=0;i<nloop;i++){
     // load image
     label[i] = fgetc(fp);

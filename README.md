@@ -5,11 +5,19 @@
 - [ここ](https://github.com/tom01h/deep-learning-from-scratch) で作った学習済みパラメータを使う
 
 ```
-$ ../mkparams.pl W1.h mean1.h var1.h W2.h mean2.h var2.h W3.h mean3.h var3.h W4.h mean4.h var4.h W5.h > ../paramn.h
+$ ../mkparams.pl W1.h mean1.h var1.h W2.h mean2.h var2.h W3.h mean3.h var3.h W4.h mean4.h var4.h W5.h > ../params.h
 ```
 
 ### C 環境
-実行法  
+
+- BNN
+  - 最初の1000データだと 72.6% の認識精度
+  - params.h を変換して paramb.h を作る (params2b.c)
+    - mean2,3,4 を x.6 精度の FIXED INT に変換
+    - データの並び順を C,Y,X から Y,X,C に変換
+  - 2,3,4層のデータ型を整数化済み
+  - Norm の直後に BinActiv(符号) なので var は不要
+
 ```
 $ gcc params2b.c
 $ ./a.out > paramb.h
@@ -17,21 +25,29 @@ $ gcc estimate.c -lm -o estimate
 $ ./estimate
 ```
 
-- BNN
-  - 最初の100データだと 70% の認識精度
-  - params.h を変換して paramb.h を作る (params2b.c)
-    - mean2,3,4 を x.6 精度の FIXED INT に変換
+- QNN
+  - 最初の1000データだと 75.6% の認識精度
+  - 整数化のためにアクティベーションを 1/3→1, 1→3 にする
+  - params.h を変換して paramq.h を作る (params2q.c)
+    - mean2,3,4 を x.5 精度の FIXED INT に変換して3倍する(アクティベーション3倍のため)
+    - var2,3,4 から std2,3,4 を計算
+      - sqrt(var) を x.5 精度の FIXED INT に変換
+      - アクティベーション時に 1/2 と比較用に使うので 3/2 倍する  
+          (Norm 時に x を割る代わりに Activ 時に 1/2 に掛ける)
     - データの並び順を C,Y,X から Y,X,C に変換
   - 2,3,4層のデータ型を整数化済み
-  - Norm の直後に BinActiv(符号) なので var は不要
-  - Activ 関数を呼んでいるところをすべて BinActiv にする （デフォルト）
-- TNN **整数化保留**
-  - 最初の100データだと 78% の認識精度
-  - ./TNN/params.h.gz を解いて ./params.h にする
-  - Activ 関数を呼んでいるところをすべて TriActiv にする
+
+```
+$ gcc params2q.c
+$ ./a.out > paramq.h
+$ gcc estimate_q.c -lm -o estimate
+$ ./estimate_q
+  ```
+
 - バッチ処理していないのでとっても遅い
 
 ### Verilog 環境
+BNNのみです  
 実行法 (Verilatorが必要です)   
 ```
 $ gcc params2mem.c

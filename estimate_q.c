@@ -2,10 +2,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "paramb.h"
-int var2[32];
-int var3[64];
-int var4[512];
+#include "paramq.h"
 
 void BinAffine(int xi,int ci, int in[xi], int f[ci][xi], int out[1][1][ci])
 {
@@ -106,15 +103,15 @@ void Pool(int ci, int yi, int xi, float in[yi][xi][ci],
 }
 
 void BinNorm(int ci, int yi, int xi, int in[yi][xi][ci],
-             int mean[ci], int var[ci],
+             int mean[ci],
              int out[yi][xi][ci])
 {
   for(int c=0; c<ci; c++){
     for(int y=0; y<yi; y++){
       for(int x=0; x<xi; x++){
-        //        out[c][y][x] = (in[c][y][x]-mean[c])/(sqrt(var[c]));
-        if((in[y][x][c]>512)||(in[y][x][c]<-512)){printf("Overflow\n");}
-        out[y][x][c] = (in[y][x][c]*64-mean[c]);
+        out[y][x][c] = (in[y][x][c]*32-mean[c]);
+        if(out[y][x][c]>32*1024){printf("Overflow\n");}
+        if(out[y][x][c]<-32*1024){printf("Underflow\n");}
       }
     }
   }
@@ -133,32 +130,41 @@ void Norm(int ci, int yi, int xi, float in[yi][xi][ci],
   }
 }
 
-void BinActivF(int ci, int yi, int xi,float in[yi][xi][ci],
+void QuaActivF(int ci, int yi, int xi,float in[yi][xi][ci],
                int out[yi][xi][ci])
 {
   for(int c=0; c<ci; c++){
     for(int y=0; y<yi; y++){
       for(int x=0; x<xi; x++){
-        if(in[y][x][c]>=0){
+        if(in[y][x][c]>=0.5){
+          out[y][x][c] = 3;
+        }else if(in[y][x][c]>=0){
           out[y][x][c] = 1;
-        } else {
+        }else if(in[y][x][c]>-0.5){
           out[y][x][c] = -1;
+        } else {
+          out[y][x][c] = -3;
         }
       }
     }
   }
 }
 
-void BinActiv(int ci, int yi, int xi,int in[yi][xi][ci],
+void QuaActiv(int ci, int yi, int xi,int in[yi][xi][ci],
+              int std[ci],
               int out[yi][xi][ci])
 {
   for(int c=0; c<ci; c++){
     for(int y=0; y<yi; y++){
       for(int x=0; x<xi; x++){
-        if(in[y][x][c]>=0){
+        if(in[y][x][c]>=std[c]){
+          out[y][x][c] = 3;
+        }else if(in[y][x][c]>=0){
           out[y][x][c] = 1;
-        } else {
+        }else if(in[y][x][c]>=-std[c]){
           out[y][x][c] = -1;
+        } else {
+          out[y][x][c] = -3;
         }
       }
     }
@@ -217,12 +223,12 @@ int main(int argc,char *argv[])
     Conv(3,32,32,pict[i],32,3,3,W1,conv1out);
     Pool(32,32,32,conv1out,2,2,pool1out);
     Norm(32,16,16,pool1out,mean1,var1,norm1out);
-    BinActivF(32,16,16,norm1out,activ1out);
+    QuaActivF(32,16,16,norm1out,activ1out);
     for(int c=0; c<32; c++){
       for(int y=0; y<18; y++){
         for(int x=0; x<18; x++){
           if((x==0)|(x==17)|(y==0)|(y==17)){
-            layer2in[y][x][c] = 1;//padding=1 //BNN
+            layer2in[y][x][c] = 1;//padding=1 //BNN,QNN
             //layer2in[y][x][c] = 0;//padding=1 //other
           }else{
             layer2in[y][x][c] = activ1out[y-1][x-1][c];
@@ -232,13 +238,13 @@ int main(int argc,char *argv[])
     }
     BinConv(32,16,16,layer2in,32,3,3,W2,conv2out);
     BinPool(32,16,16,conv2out,2,2,pool2out);
-    BinNorm(32,8,8,pool2out,mean2,var2,norm2out);
-    BinActiv(32,8,8,norm2out,activ2out);
+    BinNorm(32,8,8,pool2out,mean2,norm2out);
+    QuaActiv(32,8,8,norm2out,std2,activ2out);
     for(int c=0; c<32; c++){
       for(int y=0; y<10; y++){
         for(int x=0; x<10; x++){
           if((x==0)|(x==9)|(y==0)|(y==9)){
-            layer3in[y][x][c] = 1;//padding=1 //BNN
+            layer3in[y][x][c] = 1;//padding=1 //BNN,QNN
             //layer3in[y][x][c] = 0;//padding=1 //other
           }else{
             layer3in[y][x][c] = activ2out[y-1][x-1][c];
@@ -248,8 +254,8 @@ int main(int argc,char *argv[])
     }
     BinConv(32,8,8,layer3in,64,3,3,W3,conv3out);
     BinPool(64,8,8,conv3out,2,2,pool3out);
-    BinNorm(64,4,4,pool3out,mean3,var3,norm3out);
-    BinActiv(64,4,4,norm3out,activ3out);
+    BinNorm(64,4,4,pool3out,mean3,norm3out);
+    QuaActiv(64,4,4,norm3out,std3,activ3out);
     for(int c=0; c<64; c++){
       for(int y=0; y<4; y++){
         for(int x=0; x<4; x++){
@@ -258,8 +264,8 @@ int main(int argc,char *argv[])
       }
     }
     BinAffine(1024,512,layer4in,W4,affine4out);
-    BinNorm(512,1,1,affine4out,mean4,var4,norm4out);
-    BinActiv(512,1,1,norm4out,activ4out);
+    BinNorm(512,1,1,affine4out,mean4,norm4out);
+    QuaActiv(512,1,1,norm4out,std4,activ4out);
 
     Affine(512,10,activ4out,W5,affine5out);
 
@@ -285,38 +291,54 @@ int main(int argc,char *argv[])
   //int activ2out[8][8][32];
   //int activ3out[4][4][64];
   //int activ4out[1][1][512];
-
-  uint out;
+  /*
+  uint out,out2;
 
   for(int y=0; y<8; y++){
     for(int x=0; x<8; x++){
       out = 0;
+      out2 = 0;
       for(int c=0; c<32; c++){
-        if(activ2out[y][x][c]==-1){
+        if(activ2out[y][x][c]==-3){
+          out2 |= 1<<c;
+          out |= 1<<c;
+        } else if(activ2out[y][x][c]==-1){
+          out2 |= 1<<c;
+        } else if(activ2out[y][x][c]==1){
           out |= 1<<c;
         }
       }
-      printf("%08x, ",out);
+      printf("%08x,%08x, ",out2,out);
     }
     printf("\n");
   }
 
   printf("\n");
 
-  uint out0, out1;
+  uint out0, out1, out02, out12;
   for(int y=0; y<4; y++){
     for(int x=0; x<4; x++){
       out0 = 0;
       out1 = 0;
       for(int c=0; c<32; c++){
-        if(activ3out[y][x][c]==-1){
+        if(activ3out[y][x][c]==-3){
+          out02 |= 1<<c;
+          out0 |= 1<<c;
+        }else if(activ3out[y][x][c]==-1){
+          out02 |= 1<<c;
+        }else if(activ3out[y][x][c]==1){
           out0 |= 1<<c;
         }
-        if(activ3out[y][x][c+32]==-1){
+        if(activ3out[y][x][c+32]==-3){
+          out12 |= 1<<c;
+          out1 |= 1<<c;
+        }else if(activ3out[y][x][c+32]==-1){
+          out12 |= 1<<c;
+        }else if(activ3out[y][x][c+32]==1){
           out1 |= 1<<c;
         }
       }
-      printf("%08x, %08x, ",out0,out1);
+      printf("%08x,%08x, %08x,%08x, ",out02,out0,out12,out1);
     }
     printf("\n");
   }
@@ -327,11 +349,12 @@ int main(int argc,char *argv[])
     out = 0;
     for(int c=0; c<32; c++){
       if(activ4out[0][0][i*32+c]==-1){
-        out |= 1<<c;
+      out |= 1<<c;
       }
     }
     printf("%08x, ",out);
     if(i==7){printf("\n");}
   }
   printf("\n");
+  */
 }
