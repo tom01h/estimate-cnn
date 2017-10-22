@@ -47,20 +47,36 @@ $ ./estimate_q
 - バッチ処理していないのでとっても遅い
 
 ### Verilog 環境
-BNNのみです  
-実行法 (Verilatorが必要です)   
-```
-$ gcc params2mem.c
-$ ./a.out > param0
-$ make
-$ ./sim/Vestimate
-```
+~~BNNのみです。~~ QNN対応しました。一時的にBNN使用できません。  
+実行法には Verilatorが必要です。   
 - BNN
   - params.h を変換して param0 を作る (params2mem.c)
   - 第1層はVerilog化しない
   - 第2,3,4層をVerilog化済み
   - 出力層以降はVerilog化しない
+
+```
+$ gcc params2mem.c -lm
+$ ./a.out
+$ make
+$ ./sim/Vestimate
+```
+
+- QNN
+  - params.h を変換して param0 を作る (params2memq.c)
+  - 第1層はVerilog化しない
+  - 第2,3,4層をVerilog化済み
+  - 出力層以降はVerilog化しない
+
+```
+$ gcc params2memq.c -lm
+$ ./a.out
+$ make -f Makefile.qua
+$ ./sim/Vestimate
+```
+
 - 真面目にバイナリ化したので C 環境よりも速いみたい
+
 ---
 
 ## 推論アクセラレータ

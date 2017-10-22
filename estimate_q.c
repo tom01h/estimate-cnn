@@ -291,54 +291,50 @@ int main(int argc,char *argv[])
   //int activ2out[8][8][32];
   //int activ3out[4][4][64];
   //int activ4out[1][1][512];
-  /*
-  uint out,out2;
+
+  ulong out;
 
   for(int y=0; y<8; y++){
     for(int x=0; x<8; x++){
       out = 0;
-      out2 = 0;
       for(int c=0; c<32; c++){
         if(activ2out[y][x][c]==-3){
-          out2 |= 1<<c;
-          out |= 1<<c;
+          out |= (ulong)3<<(c*2);
         } else if(activ2out[y][x][c]==-1){
-          out2 |= 1<<c;
+          out |= (ulong)2<<(c*2);
         } else if(activ2out[y][x][c]==1){
-          out |= 1<<c;
+          out |= (ulong)1<<(c*2);
         }
       }
-      printf("%08x,%08x, ",out2,out);
+      printf("%016lx, ",out);
     }
     printf("\n");
   }
 
   printf("\n");
 
-  uint out0, out1, out02, out12;
+  ulong out0, out1;
   for(int y=0; y<4; y++){
     for(int x=0; x<4; x++){
       out0 = 0;
       out1 = 0;
       for(int c=0; c<32; c++){
         if(activ3out[y][x][c]==-3){
-          out02 |= 1<<c;
-          out0 |= 1<<c;
-        }else if(activ3out[y][x][c]==-1){
-          out02 |= 1<<c;
-        }else if(activ3out[y][x][c]==1){
-          out0 |= 1<<c;
+          out0 |= (ulong)3<<(c*2);
+        } else if(activ3out[y][x][c]==-1){
+          out0 |= (ulong)2<<(c*2);
+        } else if(activ3out[y][x][c]==1){
+          out0 |= (ulong)1<<(c*2);
         }
         if(activ3out[y][x][c+32]==-3){
-          out12 |= 1<<c;
-          out1 |= 1<<c;
-        }else if(activ3out[y][x][c+32]==-1){
-          out12 |= 1<<c;
-        }else if(activ3out[y][x][c+32]==1){
-          out1 |= 1<<c;
+          out1 |= (ulong)3<<(c*2);
+        } else if(activ3out[y][x][c+32]==-1){
+          out1 |= (ulong)2<<(c*2);
+        } else if(activ3out[y][x][c+32]==1){
+          out1 |= (ulong)1<<(c*2);
         }
       }
-      printf("%08x,%08x, %08x,%08x, ",out02,out0,out12,out1);
+      printf("%016lx, %016lx, ",out0,out1);
     }
     printf("\n");
   }
@@ -348,13 +344,17 @@ int main(int argc,char *argv[])
   for(int i=0; i<16; i=i+1){
     out = 0;
     for(int c=0; c<32; c++){
-      if(activ4out[0][0][i*32+c]==-1){
-      out |= 1<<c;
+      if(activ4out[0][0][i*32+c]==-3){
+        out |= (ulong)3<<(c*2);
+      } else if(activ4out[0][0][i*32+c]==-1){
+        out |= (ulong)2<<(c*2);
+      } else if(activ4out[0][0][i*32+c]==1){
+        out |= (ulong)1<<(c*2);
       }
     }
-    printf("%08x, ",out);
+    printf("%016lx, ",out);
     if(i==7){printf("\n");}
   }
   printf("\n");
-  */
+
 }
