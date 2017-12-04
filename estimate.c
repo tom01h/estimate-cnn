@@ -1,11 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 
 #include "paramb.h"
-int var2[32];
-int var3[64];
-int var4[512];
 
 void BinAffine(int xi,int ci, int in[xi], int f[ci][xi], int out[1][1][ci])
 {
@@ -17,7 +13,7 @@ void BinAffine(int xi,int ci, int in[xi], int f[ci][xi], int out[1][1][ci])
   }
 }
 
-void Affine(int xi,int ci, int in[1][1][xi], float f[ci][xi], float out[ci])
+void Affine(int xi,int ci, int in[1][1][xi], int f[ci][xi], int out[ci])
 {
   for(int c=0; c<ci; c++){
     out[c] = 0;
@@ -48,8 +44,8 @@ void BinConv(int ci, int yi, int xi, int in[yi+2][xi+2][ci],
 }
 
 void Conv(int ci, int yi, int xi, unsigned char in[yi+2][xi+2][ci],
-          int fci, int fyi, int fxi, float f[fci][ci*fyi*fxi],
-          float out[yi][xi][fci])
+          int fci, int fyi, int fxi, int f[fci][ci*fyi*fxi],
+          int out[yi][xi][fci])
 {
   for(int c=0; c<fci; c++){
     for(int y=0; y<yi; y++){
@@ -76,7 +72,7 @@ void BinPool(int ci, int yi, int xi, int in[yi][xi][ci],
         out[y][x][c] = in[y*pyi][x*pxi][c];
         for(int py=0; py<pyi; py++){
           for(int px=0; px<pxi; px++){
-            if((float)in[y*pyi+py][x*pxi+px][c]>out[y][x][c]){
+            if(in[y*pyi+py][x*pxi+px][c]>out[y][x][c]){
               out[y][x][c] = in[y*pyi+py][x*pxi+px][c];
             }
           }
@@ -86,8 +82,8 @@ void BinPool(int ci, int yi, int xi, int in[yi][xi][ci],
   }
 }
 
-void Pool(int ci, int yi, int xi, float in[yi][xi][ci],
-          int pyi, int pxi, float out[yi/pyi][xi/pxi][ci])
+void Pool(int ci, int yi, int xi, int in[yi][xi][ci],
+          int pyi, int pxi, int out[yi/pyi][xi/pxi][ci])
 {
   for(int c=0; c<ci; c++){
     for(int y=0; y<yi/pyi; y++){
@@ -106,7 +102,7 @@ void Pool(int ci, int yi, int xi, float in[yi][xi][ci],
 }
 
 void BinNorm(int ci, int yi, int xi, int in[yi][xi][ci],
-             int mean[ci], int var[ci],
+             int mean[ci],
              int out[yi][xi][ci])
 {
   for(int c=0; c<ci; c++){
@@ -120,20 +116,21 @@ void BinNorm(int ci, int yi, int xi, int in[yi][xi][ci],
   }
 }
 
-void Norm(int ci, int yi, int xi, float in[yi][xi][ci],
-          float mean[ci], float var[ci],
-          float out[yi][xi][ci])
+void Norm(int ci, int yi, int xi, int in[yi][xi][ci],
+          int mean[ci],
+          int out[yi][xi][ci])
 {
   for(int c=0; c<ci; c++){
     for(int y=0; y<yi; y++){
       for(int x=0; x<xi; x++){
-        out[y][x][c] = (in[y][x][c]-mean[c])/(sqrt(var[c]));
+        //        out[y][x][c] = (in[y][x][c]-mean[c])/(sqrt(var[c]));
+        out[y][x][c] = (in[y][x][c]-mean[c]);
       }
     }
   }
 }
 
-void BinActivF(int ci, int yi, int xi,float in[yi][xi][ci],
+void BinActivF(int ci, int yi, int xi, int in[yi][xi][ci],
                int out[yi][xi][ci])
 {
   for(int c=0; c<ci; c++){
@@ -175,9 +172,9 @@ int main(int argc,char *argv[])
   unsigned char label[1000];
   unsigned char pict[1000][32+2][32+2][3];
 
-  float conv1out[32][32][32];
-  float pool1out[16][16][32];
-  float norm1out[16][16][32];
+  int conv1out[32][32][32];
+  int pool1out[16][16][32];
+  int norm1out[16][16][32];
   int activ1out[16][16][32];
   int layer2in[18][18][32];
 
@@ -197,7 +194,7 @@ int main(int argc,char *argv[])
   int norm4out[1][1][512];
   int activ4out[1][1][512];
 
-  float affine5out[10];
+  int affine5out[10];
 
   int pass = 0;
   for (int i=0;i<1000;i++){
@@ -216,7 +213,7 @@ int main(int argc,char *argv[])
 
     Conv(3,32,32,pict[i],32,3,3,W1,conv1out);
     Pool(32,32,32,conv1out,2,2,pool1out);
-    Norm(32,16,16,pool1out,mean1,var1,norm1out);
+    Norm(32,16,16,pool1out,mean1,norm1out);
     BinActivF(32,16,16,norm1out,activ1out);
     for(int c=0; c<32; c++){
       for(int y=0; y<18; y++){
@@ -232,7 +229,7 @@ int main(int argc,char *argv[])
     }
     BinConv(32,16,16,layer2in,32,3,3,W2,conv2out);
     BinPool(32,16,16,conv2out,2,2,pool2out);
-    BinNorm(32,8,8,pool2out,mean2,var2,norm2out);
+    BinNorm(32,8,8,pool2out,mean2,norm2out);
     BinActiv(32,8,8,norm2out,activ2out);
     for(int c=0; c<32; c++){
       for(int y=0; y<10; y++){
@@ -248,7 +245,7 @@ int main(int argc,char *argv[])
     }
     BinConv(32,8,8,layer3in,64,3,3,W3,conv3out);
     BinPool(64,8,8,conv3out,2,2,pool3out);
-    BinNorm(64,4,4,pool3out,mean3,var3,norm3out);
+    BinNorm(64,4,4,pool3out,mean3,norm3out);
     BinActiv(64,4,4,norm3out,activ3out);
     for(int c=0; c<64; c++){
       for(int y=0; y<4; y++){
@@ -258,13 +255,13 @@ int main(int argc,char *argv[])
       }
     }
     BinAffine(1024,512,layer4in,W4,affine4out);
-    BinNorm(512,1,1,affine4out,mean4,var4,norm4out);
+    BinNorm(512,1,1,affine4out,mean4,norm4out);
     BinActiv(512,1,1,norm4out,activ4out);
 
     Affine(512,10,activ4out,W5,affine5out);
 
     int result = 0;
-    float max = affine5out[0];
+    int max = affine5out[0];
     for(int x=0; x<10; x++){
       if(affine5out[x]>max){
         max = affine5out[x];

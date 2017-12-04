@@ -9,7 +9,7 @@ $ ../mkparams.pl W1.h mean1.h var1.h W2.h mean2.h var2.h W3.h mean3.h var3.h W4.
 ```
 
 ### C 環境
-
+なんかすごく負けた気がしますが、BNNだけ1,5層を整数化してFloatをなくしました。
 - BNN
   - 最初の1000データだと 72.6% の認識精度
   - params.h を変換して paramb.h を作る (params2b.c)
