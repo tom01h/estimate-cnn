@@ -43,17 +43,21 @@ int main(int argc,char *argv[])
   }
   printf("};\n");
 
-  printf("int W2[32][9*32]={\n");
+  printf("int W2[32][9]={\n");
   for(int i=0;i<32;i++){
-    for(int j=0;j<9*32;j++){
-      int y = (j/96);
-      int x = (j/32)%3;
-      int c =  j    %32;
-      int last = (i==31)&(j==9*32-1);
+    for(int jj=0;jj<9;jj++){
+      int out = 0;
+      for(int j=0;j<32;j++){
+        int y = ((jj*32+j)/96);
+        int x = ((jj*32+j)/32)%3;
+        int c =  (jj*32+j)    %32;
+        if(W2[i][c*9+y*3+x]==-1) out |= (1<<(c%32));
+      }
+      int last = (i==31)&(jj==9-1);
       if(last){
-        printf("%d",W2[i][c*9+y*3+x]);
+        printf("%d",out);
       }else{
-        printf("%d,",W2[i][c*9+y*3+x]);
+        printf("%d,",out);
       }
     }
     printf("\n");
@@ -71,17 +75,21 @@ int main(int argc,char *argv[])
   }
   printf("};\n");
 
-  printf("int W3[64][9*32]={\n");
+  printf("int W3[64][9]={\n");
   for(int i=0;i<64;i++){
-    for(int j=0;j<9*32;j++){
-      int y = (j/96);
-      int x = (j/32)%3;
-      int c =  j    %32;
-      int last = (i==63)&(j==9*32-1);
+    for(int jj=0;jj<9;jj++){
+      int out = 0;
+      for(int j=0;j<32;j++){
+        int y = ((jj*32+j)/96);
+        int x = ((jj*32+j)/32)%3;
+        int c =  (jj*32+j)    %32;
+        if(W3[i][c*9+y*3+x]==-1) out |= (1<<(c%32));
+      }
+      int last = (i==63)&(jj==9-1);
       if(last){
-        printf("%d",W3[i][c*9+y*3+x]);
+        printf("%d",out);
       }else{
-        printf("%d,",W3[i][c*9+y*3+x]);
+        printf("%d,",out);
       }
     }
     printf("\n");
@@ -99,17 +107,21 @@ int main(int argc,char *argv[])
   }
   printf("};\n");
 
-  printf("int W4[512][1024]={\n");
+  printf("int W4[512][1024/32]={\n");
   for(int i=0;i<512;i++){
-    for(int j=0;j<16*64;j++){
-      int y = (j/256);
-      int x = (j/64)%4;
-      int c =  j    %64;
-      int last = (i==511)&(j==1023);
+    for(int jj=0;jj<16*64/32;jj++){
+      int out=0;
+      for(int j=0;j<32;j++){
+        int y = ((jj*32+j)/256);
+        int x = ((jj*32+j)/64)%4;
+        int c =  (jj*32+j)    %64;
+        if(W4[i][c*16+y*4+x]==-1) out |= (1<<(c%32));
+      }
+      int last = (i==511)&(jj==31);
       if(last){
-        printf("%d",W4[i][c*16+y*4+x]);
+        printf("%d",out);
       }else{
-        printf("%d,",W4[i][c*16+y*4+x]);
+        printf("%d,",out);
       }
     }
     printf("\n");

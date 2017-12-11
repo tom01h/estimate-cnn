@@ -1,14 +1,33 @@
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "paramb.h"
 
-void BinAffine(int xi,int ci, int in[xi], int f[ci][xi], int out[1][1][ci])
+void putd(int d)
+{
+  int rem = d;
+  for(int i=4; i>=0; i--){
+    int div=1;
+    for(int j=0; j<i; j++){
+      div *=10;
+    }
+    putchar('0'+rem/div);
+    rem = rem % div;
+  }
+}
+
+void BinAffine(int xi,int ci, int in[xi*32], int f[ci][xi], int out[1][1][ci])
 {
   for(int c=0; c<ci; c++){
     out[0][0][c] = 0;
     for(int x=0; x<xi; x++){
-      out[0][0][c] += f[c][x]*in[x];
+      //out[0][0][c] += f[c][x]*in[x];
+      for(int i=0; i<32; i++){
+        if(f[c][x]&(1<<i)){
+          out[0][0][c] -= in[x*32+i];
+        }else{
+          out[0][0][c] += in[x*32+i];
+        }
+      }
     }
   }
 }
@@ -23,7 +42,7 @@ void Affine(int xi,int ci, int in[1][1][xi], int f[ci][xi], int out[ci])
   }
 }
 
-void BinConv(int ci, int yi, int xi, int in[yi+2][xi+2][ci],
+void BinConv(int ci, int yi, int xi, int in[yi+2][xi+2][ci*32],
              int fci, int fyi, int fxi, int f[fci][ci*fyi*fxi],
              int out[yi][xi][fci])
 {
@@ -34,7 +53,14 @@ void BinConv(int ci, int yi, int xi, int in[yi+2][xi+2][ci],
         for(int fc=0; fc<ci; fc++){
           for(int fy=0; fy<fyi; fy++){
             for(int fx=0; fx<fxi; fx++){
-              out[y][x][c] += f[c][fy*fxi*ci+fx*ci+fc]*in[fy+y][fx+x][fc];
+              //out[y][x][c] += f[c][fy*fxi*ci+fx*ci+fc]*in[fy+y][fx+x][fc];
+              for(int i=0; i<32; i++){
+                if(f[c][fy*fxi*ci+fx*ci+fc]&(1<<i)){
+                  out[y][x][c] -= in[fy+y][fx+x][fc*32+i];
+                }else{
+                  out[y][x][c] += in[fy+y][fx+x][fc*32+i];
+                }
+              }
             }
           }
         }    
@@ -108,8 +134,8 @@ void BinNorm(int ci, int yi, int xi, int in[yi][xi][ci],
   for(int c=0; c<ci; c++){
     for(int y=0; y<yi; y++){
       for(int x=0; x<xi; x++){
-        //        out[c][y][x] = (in[c][y][x]-mean[c])/(sqrt(var[c]));
-        if((in[y][x][c]>512)||(in[y][x][c]<-512)){printf("Overflow\n");}
+        //out[c][y][x] = (in[c][y][x]-mean[c])/(sqrt(var[c]));
+        //if((in[y][x][c]>512)||(in[y][x][c]<-512)){printf("Overflow\n");}
         out[y][x][c] = (in[y][x][c]*64-mean[c]);
       }
     }
@@ -166,11 +192,12 @@ int main(int argc,char *argv[])
 {
   FILE *fp;
   if((fp = fopen("cifar10-test", "rb")) == NULL ) {
-    fprintf(stderr,"There is no cifar10-test\n");
-    exit(EXIT_FAILURE);
+    //    fprintf(stderr,"There is no cifar10-test\n");
+    //    exit(EXIT_FAILURE);
+    return(1);
   }
-  unsigned char label[1000];
-  unsigned char pict[1000][32+2][32+2][3];
+  unsigned char label;
+  unsigned char pict[32+2][32+2][3];
 
   int conv1out[32][32][32];
   int pool1out[16][16][32];
@@ -198,20 +225,20 @@ int main(int argc,char *argv[])
 
   int pass = 0;
   for (int i=0;i<1000;i++){
-    label[i] = fgetc(fp);
+    label = fgetc(fp);
     for(int c=0; c<3; c++){
       for(int y=0; y<32+2; y++){
         for(int x=0; x<32+2; x++){
           if((x==0)|(x==33)|(y==0)|(y==33)){
-            pict[i][y][x][c] = 0;//padding=1
+            pict[y][x][c] = 0;//padding=1
           }else{
-            pict[i][y][x][c] = fgetc(fp);
+            pict[y][x][c] = fgetc(fp);
           }
         }
       }
     }    
 
-    Conv(3,32,32,pict[i],32,3,3,W1,conv1out);
+    Conv(3,32,32,pict,32,3,3,W1,conv1out);
     Pool(32,32,32,conv1out,2,2,pool1out);
     Norm(32,16,16,pool1out,mean1,norm1out);
     BinActivF(32,16,16,norm1out,activ1out);
@@ -227,7 +254,7 @@ int main(int argc,char *argv[])
         }
       }
     }
-    BinConv(32,16,16,layer2in,32,3,3,W2,conv2out);
+    BinConv(32/32,16,16,layer2in,32,3,3,W2,conv2out);
     BinPool(32,16,16,conv2out,2,2,pool2out);
     BinNorm(32,8,8,pool2out,mean2,norm2out);
     BinActiv(32,8,8,norm2out,activ2out);
@@ -243,7 +270,7 @@ int main(int argc,char *argv[])
         }
       }
     }
-    BinConv(32,8,8,layer3in,64,3,3,W3,conv3out);
+    BinConv(32/32,8,8,layer3in,64,3,3,W3,conv3out);
     BinPool(64,8,8,conv3out,2,2,pool3out);
     BinNorm(64,4,4,pool3out,mean3,norm3out);
     BinActiv(64,4,4,norm3out,activ3out);
@@ -254,7 +281,7 @@ int main(int argc,char *argv[])
         }
       }
     }
-    BinAffine(1024,512,layer4in,W4,affine4out);
+    BinAffine(1024/32,512,layer4in,W4,affine4out);
     BinNorm(512,1,1,affine4out,mean4,norm4out);
     BinActiv(512,1,1,norm4out,activ4out);
 
@@ -268,13 +295,23 @@ int main(int argc,char *argv[])
         result = x;
       }
     }
-    if(result==label[i]){
+    if(result==label){
       pass++;
     }else{
-      printf ("No. %02d / Right : %02d != Result : %02d\n",i,label[i],result);
+      //printf ("No. %02d / Answer : %02d != Result : %02d\n",i,label,result);
+      fputs("No. ",stdout);
+      putd(i);
+      fputs(" / Answer : ",stdout);
+      putchar('0'+label);
+      fputs(" != Result : ",stdout);
+      putchar('0'+result);
+      fputs("\n",stdout);
     }
   }
-  printf ("== Pass Count : %04d ==\n",pass);
+  //  printf ("== Pass Count : %04d ==\n",pass);
+  fputs("== Pass Count : ",stdout);
+  putd(pass);
+  fputs(" ==\n",stdout);
 
   //int conv2out[16][16][32];
   //int pool2out[8][8][32];
@@ -282,8 +319,8 @@ int main(int argc,char *argv[])
   //int activ2out[8][8][32];
   //int activ3out[4][4][64];
   //int activ4out[1][1][512];
-
-  uint out;
+  /*
+  unsigned out;
 
   for(int y=0; y<8; y++){
     for(int x=0; x<8; x++){
@@ -300,7 +337,7 @@ int main(int argc,char *argv[])
 
   printf("\n");
 
-  uint out0, out1;
+  unsigned out0, out1;
   for(int y=0; y<4; y++){
     for(int x=0; x<4; x++){
       out0 = 0;
@@ -331,4 +368,5 @@ int main(int argc,char *argv[])
     if(i==7){printf("\n");}
   }
   printf("\n");
+  /**/
 }
