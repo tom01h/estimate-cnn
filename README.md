@@ -25,8 +25,10 @@ $ ./estimate
 ```
 
 なんかすごく負けた気がしますが、BNNだけ1,5層を整数化してFloatをなくしました。[ソース](https://github.com/tom01h/estimate-cnn/blob/a3716afd81e24c5a0d0e0fe16a9fce84ce9077a0/estimate.c)  
-次に、下の```推論アクセラレータ```の```仕様法```に書いてある順で計算することで使用メモリ量を削減しました。ついでに結構速くなったようです。[ソース](https://github.com/tom01h/estimate-cnn/blob/5db29700ce188e95edac66567356262a1d111dc3/estimate.c)    
-最後は XNOR とビットカウントを使った最適化です。
+次に、下の```推論アクセラレータ```の```仕様法```に書いてある順で計算します。保存するデータをアクティベーション後のデータだけにすることで使用メモリ量を削減しました。ついでに結構速くなったようです。[ソース](https://github.com/tom01h/estimate-cnn/blob/5db29700ce188e95edac66567356262a1d111dc3/estimate.c)    
+最後は XNOR とビットカウントを使った最適化です。[ソース](https://github.com/tom01h/estimate-cnn/blob/0a085e5acad9c894536e968f0ba43b4a2232de9c/estimate.c)    
+下のグラフがざっと見積もった使用メモリの量と zero-riscy で1画像の推論を実行したときのサイクル数です。  
+![](BNN_cyc_mem.png)
 
 - QNN
   - 最初の1000データだと 75.6% の認識精度
