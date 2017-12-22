@@ -9,7 +9,6 @@ $ ../mkparams.pl W1.h mean1.h var1.h W2.h mean2.h var2.h W3.h mean3.h var3.h W4.
 ```
 
 ### C 環境
-なんかすごく負けた気がしますが、BNNだけ1,5層を整数化してFloatをなくしました。
 - BNN
   - 最初の1000データだと 72.6% の認識精度
   - params.h を変換して paramb.h を作る (params2b.c)
@@ -21,9 +20,12 @@ $ ../mkparams.pl W1.h mean1.h var1.h W2.h mean2.h var2.h W3.h mean3.h var3.h W4.
 ```
 $ gcc params2b.c
 $ ./a.out > paramb.h
-$ gcc estimate.c -lm -o estimate
+$ gcc estimate.c -o estimate
 $ ./estimate
 ```
+
+なんかすごく負けた気がしますが、BNNだけ1,5層を整数化してFloatをなくしました。[ソース](https://github.com/tom01h/estimate-cnn/blob/a3716afd81e24c5a0d0e0fe16a9fce84ce9077a0/estimate.c)  
+次に、下の```推論アクセラレータ```の```仕様法```に書いてある順で計算することで使用メモリ量を削減しました。ついでに結構速くなったようです。  
 
 - QNN
   - 最初の1000データだと 75.6% の認識精度
