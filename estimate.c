@@ -78,7 +78,7 @@ void Conv(int ci, int yi, int xi, unsigned char in[yi+2][xi+2][ci],
           int fci, int fyi, int fxi, int f[fci][ci*fyi*fxi], int mean[ci],
           int out[yi/2+2][xi/2+2][fci])
 {
-  int acc;
+  short acc;
   int pool;
   int act;
   for(int c=0; c<fci; c++){
@@ -93,7 +93,7 @@ void Conv(int ci, int yi, int xi, unsigned char in[yi+2][xi+2][ci],
               for(int fc=0; fc<ci; fc++){
                 for(int fy=0; fy<fyi; fy++){
                   for(int fx=0; fx<fxi; fx++){
-                    acc += f[c*32+cc][fy*fxi*ci+fx*ci+fc]*(in[fy+(y+yy)][fx+(x+xx)][fc]*2-255);
+                    acc += f[c*32+cc][fy*fxi*ci+fx*ci+fc]*(in[fy+(y+yy)][fx+(x+xx)][fc]*2-255)/4;
                   }
                 }
               }

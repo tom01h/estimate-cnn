@@ -27,71 +27,44 @@ vluint64_t eval(vluint64_t main_time, Vestimate* verilator_top, VerilatedVcdC* t
 }
 
 void Conv(int ci, int yi, int xi, unsigned char in[32+2][32+2][3],
-          int fci, int fyi, int fxi, float f[32][3*3*3],
-          float out[32][32][32])
+          int fci, int fyi, int fxi, int f[32][3*3*3], int mean[32],
+          uint out[32/2+2][32/2+2][1])
 {
+  short acc;
+  int pool;
+  int act;
   for(int c=0; c<fci; c++){
-    for(int y=0; y<yi; y++){
-      for(int x=0; x<xi; x++){
-        out[y][x][c] = 0;
-        for(int fc=0; fc<ci; fc++){
-          for(int fy=0; fy<fyi; fy++){
-            for(int fx=0; fx<fxi; fx++){
-              out[y][x][c] += f[c][fy*fxi*ci+fx*ci+fc]*(in[fy+y][fx+x][fc]*2-255);
+    for(int y=0; y<yi; y+=2){
+      for(int x=0; x<xi; x+=2){
+        act = 0;
+        for(int cc=0; cc<32; cc++){
+          pool = 0x80000000;
+          for(int yy=0; yy<2; yy++){
+            for(int xx=0; xx<2; xx++){
+              acc = 0;
+              for(int fc=0; fc<ci; fc++){
+                for(int fy=0; fy<fyi; fy++){
+                  for(int fx=0; fx<fxi; fx++){
+                    acc += f[c*32+cc][fy*fxi*ci+fx*ci+fc]*(in[fy+(y+yy)][fx+(x+xx)][fc]*2-255)/4;
+                  }
+                }
+              }
+              if(acc>pool){
+                pool=acc;
+              }
             }
           }
-        }    
-      }
-    }
-  }
-}
-void Pool(int ci, int yi, int xi, float in[32][32][32],
-          int pyi, int pxi, float out[16][16][32])
-{
-  for(int c=0; c<ci; c++){
-    for(int y=0; y<yi/pyi; y++){
-      for(int x=0; x<xi/pxi; x++){
-        out[y][x][c] = in[y*pyi][x*pxi][c];
-        for(int py=0; py<pyi; py++){
-          for(int px=0; px<pxi; px++){
-            if(in[y*pyi+py][x*pxi+px][c]>out[y][x][c]){
-              out[y][x][c] = in[y*pyi+py][x*pxi+px][c];
-            }
+          if((pool-mean[c*32+cc])<0){
+            act |= (1<<cc);
           }
-        }    
-      }
-    }
-  }
-}
-void Norm(int ci, int yi, int xi, float in[16][16][32],
-          float mean[32], float var[32],
-          float out[16][16][32])
-{
-  for(int c=0; c<ci; c++){
-    for(int y=0; y<yi; y++){
-      for(int x=0; x<xi; x++){
-        out[y][x][c] = (in[y][x][c]-mean[c])/(sqrt(var[c]));
-      }
-    }
-  }
-}
-void BinActivF(int ci, int yi, int xi,float in[16][16][32],
-               int out[16][16][32])
-{
-  for(int c=0; c<ci; c++){
-    for(int y=0; y<yi; y++){
-      for(int x=0; x<xi; x++){
-        if(in[y][x][c]>=0){
-          out[y][x][c] = 1;
-        } else {
-          out[y][x][c] = -1;
         }
+        out[y/2+1][x/2+1][c] = act;
       }
     }
   }
 }
 
-void Affine(int xi,int ci, uint in[16], float f[10][512], float out[10])
+void Affine(int xi,int ci, uint in[16], int f[10][512], int out[10])
 {
   for(int c=0; c<ci; c++){
     out[c] = 0;
@@ -122,12 +95,7 @@ int main(int argc, char **argv, char **env) {
   unsigned char label[1000];
   unsigned char pict[1000][32+2][32+2][3];
 
-  float conv1out[32][32][32];
-  float pool1out[16][16][32];
-  float norm1out[16][16][32];
-  int activ1out[16][16][32];
-
-  uint activ1bin[16][16];
+  uint activ1bin[18][18][1];
 
   uint activ2bin[8][8];
 
@@ -135,7 +103,7 @@ int main(int argc, char **argv, char **env) {
 
   uint activ4bin[16];
 
-  float affine5out[10];
+  int affine5out[10];
 
   int pass = 0;
 
@@ -170,20 +138,8 @@ int main(int argc, char **argv, char **env) {
       }
     }    
     // 1st layer
-    Conv(3,32,32,pict[i],32,3,3,W1,conv1out);
-    Pool(32,32,32,conv1out,2,2,pool1out);
-    Norm(32,16,16,pool1out,mean1,var1,norm1out);
-    BinActivF(32,16,16,norm1out,activ1out);
-    for(int y=0; y<16; y++){
-      for(int x=0; x<16; x++){
-        activ1bin[y][x]=0;
-        for(int c=0; c<32; c=c+1){
-          if(activ1out[y][x][c]==-1){
-            activ1bin[y][x]|=1<<c;
-          }
-        }
-      }
-    }
+    Conv(3,32,32,pict[i],32/32,3,3,W1,mean1,activ1bin);
+
     // 2nd layer
     for(int y=0; y<8; y=y+1){
       for(int x=0; x<8; x=x+1){
@@ -200,11 +156,7 @@ int main(int argc, char **argv, char **env) {
               for(int fx=0; fx<3; fx=fx+1){
                 verilator_top->com=1;//acc
                 verilator_top->addr=w2b+c*9+fy*3+fx;
-                if(((py+fy)==0)|((py+fy)==17)|((px+fx)==0)|((px+fx)==17)){
-                  verilator_top->data=0;
-                }else{
-                  verilator_top->data=activ1bin[py+fy-1][px+fx-1];
-                }
+                verilator_top->data=activ1bin[py+fy][px+fx][0];
 
                 main_time = eval(main_time, verilator_top, tfp);
               }
@@ -302,7 +254,7 @@ int main(int argc, char **argv, char **env) {
     Affine(512,10,activ4bin,W5,affine5out);
 
     int result = 0;
-    float max = affine5out[0];
+    int max = affine5out[0];
     for(int x=0; x<10; x++){
       if(affine5out[x]>max){
         max = affine5out[x];

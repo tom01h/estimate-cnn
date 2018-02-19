@@ -12,7 +12,7 @@ int main(int argc,char *argv[])
       fi[i]+=fabs(W1[i][j]);
     }
     fi[i]*=512;
-    fi[i]=pow(2.0,31)/fi[i];
+    fi[i]=pow(2.0,18)/fi[i];
   }
 
   printf("int W1[32][27]={\n");
@@ -34,6 +34,7 @@ int main(int argc,char *argv[])
 
   printf("int mean1[32]={\n");
   for(int i=0;i<32;i++){
+    fi[i]/=4;
     int last = (i==31);
     if(last){
       printf("%d\n",(int)(mean1[i]*fi[i]));
