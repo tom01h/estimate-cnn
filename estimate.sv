@@ -51,6 +51,11 @@ module estimate_core
    reg [31:0]        data_2;
 // 1st stage
 
+   wire signed [15:0] ip = ($signed(data_1[31:24])*$signed(param[31:24]) +
+                            $signed(data_1[23:16])*$signed(param[23:16]) +
+                            $signed(data_1[15:8] )*$signed(param[15:8] )   );
+
+
    always_ff @(posedge clk)begin
       com_2[2:0] <= com_1;
       case(com_1)
@@ -64,6 +69,12 @@ module estimate_core
            data_2 <= data_1;
         end
         3'd3 : begin //norm
+           data_2 <= param;
+        end
+        3'd5 : begin //acc8
+           data_2 <= ip/2;
+        end
+        3'd6 : begin //norm8
            data_2 <= param;
         end
       endcase
@@ -92,10 +103,16 @@ module estimate_core
            acc[15:0] <= data_2[15:0];
         end
         3'd3 : begin //norm
-           pool[15:0] <= {pool[15:0],6'h00} - data_2[15:0];
+           pool[15:0] <= {pool[15:0],3'h0} - data_2[15:0];
         end
         3'd4 : begin //activ
            activ <= pool[15];
+        end
+        3'd5 : begin //acc8
+           acc <= acc + data_2;
+        end
+        3'd6 : begin //norm8
+           pool[15:0] <= pool[15:0] - data_2[15:0];
         end
       endcase
    end

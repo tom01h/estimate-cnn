@@ -2,7 +2,7 @@
 
 #include "paramb.h"
 
-void BinAffine(int xi,int ci, int in[xi], int f[ci][xi], int mean[ci], signed char out[1][1][ci])
+void BinAffine(int xi,int ci, int in[xi], int f[ci][xi], int mean[ci], signed char out[ci])
 {
   int acc;
   for(int c=0; c<ci; c++){
@@ -15,19 +15,19 @@ void BinAffine(int xi,int ci, int in[xi], int f[ci][xi], int mean[ci], signed ch
       acc += 32;
     }
     if((acc*64-mean[c])>=0){
-      out[0][0][c] = 1;
+      out[c] = 1;
     } else {
-      out[0][0][c] = -1;
+      out[c] = -1;
     }
   }
 }
 
-void Affine(int xi,int ci, signed char in[1][1][xi], int f[ci][xi], int out[ci])
+void Affine(int xi,int ci, signed char in[xi], int f[ci][xi], int out[ci])
 {
   for(int c=0; c<ci; c++){
     out[c] = 0;
     for(int x=0; x<xi; x++){
-      out[c] += f[c][x]*in[0][0][x];
+      out[c] += f[c][x]*in[x];
     }
   }
 }
@@ -75,7 +75,7 @@ void BinConv(int ci, int yi, int xi, int in[yi+2][xi+2][ci],
 }
 
 void Conv(int ci, int yi, int xi, unsigned char in[yi+2][xi+2][ci],
-          int fci, int fyi, int fxi, int f[fci][ci*fyi*fxi], int mean[ci],
+          int fci, int fyi, int fxi, int f[fci*32][ci*fyi*fxi], int mean[fci*32],
           int out[yi/2+2][xi/2+2][fci])
 {
   short acc;
@@ -130,7 +130,7 @@ int main(int argc,char *argv[])
   int activ3out[4][4][2];
   int layer4in[2*4*4];
 
-  signed char activ4out[1][1][512];
+  signed char activ4out[512];
 
   int affine5out[10];
 
@@ -204,4 +204,5 @@ int main(int argc,char *argv[])
     }
   }
   printf ("== Pass Count : %04d ==\n",pass);
+
 }
